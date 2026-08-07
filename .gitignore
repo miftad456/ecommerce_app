@@ -1,0 +1,77 @@
+# -----------------------------------------------------------------------------
+# 1. Flutter & Dart
+# -----------------------------------------------------------------------------
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# -----------------------------------------------------------------------------
+# 2. Android
+# -----------------------------------------------------------------------------
+
+.gradle/
+android/local.properties
+android/key.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/**/GeneratedPluginRegistrant.java
+android/**/*.iml
+android/.cxx/
+
+# -----------------------------------------------------------------------------
+# 3. iOS & macOS
+# -----------------------------------------------------------------------------
+
+ios/Flutter/.last_build_id
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+Pods/
+DerivedData/
+*.moved-aside
+*.xcuserstate
+
+# -----------------------------------------------------------------------------
+# 4. Web, Windows & Linux generated files
+# -----------------------------------------------------------------------------
+
+.snapshots/
+ephemeral/
+
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# -----------------------------------------------------------------------------
+# 5. IDEs & Editors
+# -----------------------------------------------------------------------------
+
+.idea/
+.vscode/
+
+*.iml
+*.ipr
+*.iws
+
+# -----------------------------------------------------------------------------
+# 6. Logs & System Files
+# -----------------------------------------------------------------------------
+
+*.log
+.DS_Store
+Thumbs.db
+
+# -----------------------------------------------------------------------------
+# 7. Dart/Flutter generated symbol & map files
+# -----------------------------------------------------------------------------
+
+app.*.symbols
+app.*.map.json
