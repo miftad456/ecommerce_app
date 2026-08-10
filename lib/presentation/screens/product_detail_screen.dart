@@ -1,14 +1,14 @@
+
 import 'package:flutter/material.dart';
 
-import '../models/product.dart';
+import '../../domain/entities/product.dart';
 import '../widgets/phone_frame.dart';
 
 // ============================================================
 // PRODUCT DETAIL SCREEN
 // ============================================================
 
-class ProductDetailScreen
-    extends StatefulWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailScreen({
@@ -17,9 +17,8 @@ class ProductDetailScreen
   });
 
   @override
-  State<ProductDetailScreen>
-      createState() =>
-          _ProductDetailScreenState();
+  State<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
 }
 
 // ============================================================
@@ -71,28 +70,23 @@ class _ProductDetailScreenState
   void deleteProduct() {
     showDialog(
       context: context,
-
       builder: (context) {
         return AlertDialog(
           title: const Text(
             'Delete Product?',
           ),
-
           content: const Text(
             'Are you sure you want to delete this product?',
           ),
-
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-
               child: const Text(
                 'Cancel',
               ),
             ),
-
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -105,7 +99,6 @@ class _ProductDetailScreenState
                   },
                 );
               },
-
               child: const Text(
                 'Delete',
               ),
@@ -140,13 +133,10 @@ class _ProductDetailScreenState
 
         body: SafeArea(
           child: SingleChildScrollView(
-            padding:
-                const EdgeInsets.all(20),
-
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
-
               children: [
                 // ------------------------------------------------
                 // PRODUCT IMAGE
@@ -155,24 +145,15 @@ class _ProductDetailScreenState
                 Container(
                   width: double.infinity,
                   height: 240,
-
                   decoration: BoxDecoration(
-                    color:
-                        const Color(0xFFF1EFF7),
-
+                    color: const Color(0xFFF1EFF7),
                     borderRadius:
-                        BorderRadius.circular(
-                      24,
-                    ),
+                        BorderRadius.circular(24),
                   ),
-
                   child: const Icon(
                     Icons.shopping_bag_outlined,
-
                     size: 100,
-
-                    color:
-                        Color(0xFF6750A4),
+                    color: Color(0xFF6750A4),
                   ),
                 ),
 
@@ -184,11 +165,9 @@ class _ProductDetailScreenState
 
                 Text(
                   product.title,
-
                   style: const TextStyle(
                     fontSize: 30,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
@@ -200,14 +179,10 @@ class _ProductDetailScreenState
 
                 Text(
                   '\$${product.price.toStringAsFixed(2)}',
-
                   style: const TextStyle(
                     fontSize: 24,
-                    fontWeight:
-                        FontWeight.bold,
-
-                    color:
-                        Color(0xFF6750A4),
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6750A4),
                   ),
                 ),
 
@@ -219,11 +194,9 @@ class _ProductDetailScreenState
 
                 const Text(
                   'Description',
-
                   style: TextStyle(
                     fontSize: 19,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
@@ -235,12 +208,10 @@ class _ProductDetailScreenState
 
                 Text(
                   product.description,
-
                   style: TextStyle(
                     fontSize: 16,
                     height: 1.5,
-                    color:
-                        Colors.grey.shade700,
+                    color: Colors.grey.shade700,
                   ),
                 ),
 
@@ -252,11 +223,9 @@ class _ProductDetailScreenState
 
                 ElevatedButton.icon(
                   onPressed: editProduct,
-
                   icon: const Icon(
                     Icons.edit_outlined,
                   ),
-
                   label: const Text(
                     'Edit Product',
                   ),
@@ -270,39 +239,25 @@ class _ProductDetailScreenState
 
                 SizedBox(
                   width: double.infinity,
-
                   height: 52,
-
-                  child:
-                      OutlinedButton.icon(
-                    onPressed:
-                        deleteProduct,
-
+                  child: OutlinedButton.icon(
+                    onPressed: deleteProduct,
                     icon: const Icon(
                       Icons.delete_outline,
                     ),
-
                     label: const Text(
                       'Delete Product',
                     ),
-
                     style:
                         OutlinedButton.styleFrom(
-                      foregroundColor:
-                          Colors.red,
-
-                      side:
-                          const BorderSide(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(
                         color: Colors.red,
                       ),
-
                       shape:
                           RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius
-                                .circular(
-                          14,
-                        ),
+                            BorderRadius.circular(14),
                       ),
                     ),
                   ),
@@ -315,3 +270,4 @@ class _ProductDetailScreenState
     );
   }
 }
+

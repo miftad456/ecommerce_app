@@ -1,6 +1,13 @@
+
 import 'package:flutter/material.dart';
 
-import '../models/product.dart';
+import '../../data/datasources/product_datasource.dart';
+import '../../data/repositories/product_repository_impl.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/usecases/create_product.dart';
+import '../../domain/usecases/delete_product.dart';
+import '../../domain/usecases/update_product.dart';
+import '../../domain/usecases/view_all_products.dart';
 import '../widgets/phone_frame.dart';
 
 // ============================================================
@@ -21,49 +28,125 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // ==========================================================
+  // DATA / DOMAIN DEPENDENCIES
+  // ==========================================================
+
+  late final ProductDatasource datasource;
+
+  late final ProductRepositoryImpl repository;
+
+  late final ViewAllProducts viewAllProducts;
+
+  late final CreateProduct createProduct;
+
+  late final UpdateProduct updateProduct;
+
+  late final DeleteProduct deleteProduct;
+
+  // ==========================================================
   // PRODUCTS
   // ==========================================================
 
-  final List<Product> products = [
-    Product(
-      id: 1,
-      title: 'Gaming Laptop',
-      description:
-          'Powerful laptop for work and gaming.',
-      price: 1500,
-    ),
+  List<Product> products = [];
 
-    Product(
-      id: 2,
-      title: 'Smartphone',
-      description:
-          'Modern smartphone with 5G support.',
-      price: 800,
-    ),
+  // ==========================================================
+  // INITIALIZE
+  // ==========================================================
 
-    Product(
-      id: 3,
-      title: 'Wireless Headphones',
-      description:
-          'Comfortable headphones with clear sound.',
-      price: 120,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    // --------------------------------------------------------
+    // Create our dependencies.
+    //
+    // Later we can move this to dependency injection.
+    // For now we keep it simple.
+    // --------------------------------------------------------
+
+    datasource = ProductDatasource();
+
+    repository =
+        ProductRepositoryImpl(datasource);
+
+    viewAllProducts =
+        ViewAllProducts(repository);
+
+    createProduct =
+        CreateProduct(repository);
+
+    updateProduct =
+        UpdateProduct(repository);
+
+    deleteProduct =
+        DeleteProduct(repository);
+
+    // --------------------------------------------------------
+    // Load products.
+    // --------------------------------------------------------
+
+    loadProducts();
+  }
+
+  // ==========================================================
+  // LOAD PRODUCTS
+  // ==========================================================
+
+  Future<void> loadProducts() async {
+    final result =
+        await viewAllProducts();
+
+    result.fold(
+      (failure) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+          SnackBar(
+            content: Text(failure),
+          ),
+        );
+      },
+      (loadedProducts) {
+        if (!mounted) return;
+
+        setState(() {
+          products = loadedProducts;
+        });
+      },
+    );
+  }
 
   // ==========================================================
   // ADD PRODUCT
   // ==========================================================
 
   Future<void> addProduct() async {
-    final result = await Navigator.pushNamed(
+    final result =
+        await Navigator.pushNamed(
       context,
       '/product-form',
     );
 
     if (result is Product) {
-      setState(() {
-        products.add(result);
-      });
+      final createResult =
+          await createProduct(result);
+
+      createResult.fold(
+        (failure) {
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+            SnackBar(
+              content: Text(failure),
+            ),
+          );
+        },
+        (_) {
+          loadProducts();
+        },
+      );
     }
   }
 
@@ -74,11 +157,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> openProduct(
     Product product,
   ) async {
-    final result = await Navigator.pushNamed(
+    final result =
+        await Navigator.pushNamed(
       context,
       '/product-detail',
-
-      // Passing data to the next screen.
       arguments: product,
     );
 
@@ -87,45 +169,67 @@ class _HomeScreenState extends State<HomeScreen> {
     // --------------------------------------------------------
 
     if (result is Map<String, dynamic>) {
-      final action = result['action'];
+      final action =
+          result['action'];
 
-      // ------------------------------------------------------
+      // ======================================================
       // UPDATE
-      // ------------------------------------------------------
+      // ======================================================
 
       if (action == 'update') {
         final updatedProduct =
             result['product'] as Product;
 
-        setState(() {
-          final index =
-              products.indexWhere(
-            (item) =>
-                item.id ==
-                updatedProduct.id,
-          );
+        final updateResult =
+            await updateProduct(
+          updatedProduct,
+        );
 
-          if (index != -1) {
-            products[index] =
-                updatedProduct;
-          }
-        });
+        updateResult.fold(
+          (failure) {
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(context)
+                .showSnackBar(
+              SnackBar(
+                content: Text(failure),
+              ),
+            );
+          },
+          (_) {
+            loadProducts();
+          },
+        );
       }
 
-      // ------------------------------------------------------
+      // ======================================================
       // DELETE
-      // ------------------------------------------------------
+      // ======================================================
 
       if (action == 'delete') {
         final productId =
             result['productId'] as int;
 
-        setState(() {
-          products.removeWhere(
-            (item) =>
-                item.id == productId,
-          );
-        });
+        final deleteResult =
+            await deleteProduct(
+          productId,
+        );
+
+        deleteResult.fold(
+          (failure) {
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(context)
+                .showSnackBar(
+              SnackBar(
+                content: Text(failure),
+              ),
+            );
+          },
+          (_) {
+            loadProducts();
+          },
+        );
       }
     }
   }
@@ -141,18 +245,15 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(
         bottom: 14,
       ),
-
       child: InkWell(
         borderRadius:
             BorderRadius.circular(20),
-
         onTap: () {
           openProduct(product);
         },
-
         child: Padding(
-          padding: const EdgeInsets.all(14),
-
+          padding:
+              const EdgeInsets.all(14),
           child: Row(
             children: [
               // ------------------------------------------------
@@ -162,20 +263,19 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 80,
                 height: 80,
-
-                decoration: BoxDecoration(
+                decoration:
+                    BoxDecoration(
                   color:
                       const Color(0xFFF1EFF7),
-
                   borderRadius:
-                      BorderRadius.circular(16),
+                      BorderRadius.circular(
+                    16,
+                  ),
                 ),
-
                 child: const Icon(
-                  Icons.shopping_bag_outlined,
-
+                  Icons
+                      .shopping_bag_outlined,
                   size: 38,
-
                   color:
                       Color(0xFF6750A4),
                 ),
@@ -191,16 +291,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.start,
-
                   children: [
                     Text(
                       product.title,
-
                       maxLines: 1,
-
                       overflow:
                           TextOverflow.ellipsis,
-
                       style:
                           const TextStyle(
                         fontSize: 17,
@@ -209,29 +305,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 6),
+                    const SizedBox(
+                      height: 6,
+                    ),
 
                     Text(
                       product.description,
-
                       maxLines: 2,
-
                       overflow:
                           TextOverflow.ellipsis,
-
-                      style:
-                          TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color:
-                            Colors.grey.shade600,
+                        color: Colors
+                            .grey.shade600,
                       ),
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(
+                      height: 8,
+                    ),
 
                     Text(
                       '\$${product.price.toStringAsFixed(2)}',
-
                       style:
                           const TextStyle(
                         fontSize: 16,
@@ -268,7 +363,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // ==========================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return PhoneFrame(
       child: Scaffold(
         // ------------------------------------------------------
@@ -279,13 +376,12 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text(
             'ShopEasy',
           ),
-
           actions: [
             IconButton(
               onPressed: () {},
-
               icon: const Icon(
-                Icons.shopping_cart_outlined,
+                Icons
+                    .shopping_cart_outlined,
               ),
             ),
           ],
@@ -301,13 +397,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 const EdgeInsets.symmetric(
               horizontal: 18,
             ),
-
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
-
               children: [
-                const SizedBox(height: 10),
+                const SizedBox(
+                  height: 10,
+                ),
 
                 // ------------------------------------------------
                 // GREETING
@@ -322,7 +418,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 6),
+                const SizedBox(
+                  height: 6,
+                ),
 
                 Text(
                   'Everything you need in one place.',
@@ -333,7 +431,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(
+                  height: 20,
+                ),
 
                 // ------------------------------------------------
                 // SEARCH
@@ -344,14 +444,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       const InputDecoration(
                     hintText:
                         'Search products...',
-
-                    prefixIcon: Icon(
-                      Icons.search,
-                    ),
+                    prefixIcon:
+                        Icon(Icons.search),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(
+                  height: 20,
+                ),
 
                 // ------------------------------------------------
                 // CATEGORY
@@ -366,7 +466,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(
+                  height: 12,
+                ),
 
                 // ------------------------------------------------
                 // PRODUCT LIST
@@ -382,12 +484,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       : ListView.builder(
                           padding:
                               EdgeInsets.zero,
-
                           itemCount:
                               products.length,
-
                           itemBuilder:
-                              (context, index) {
+                              (
+                            context,
+                            index,
+                          ) {
                             return productCard(
                               products[index],
                             );
@@ -406,7 +509,6 @@ class _HomeScreenState extends State<HomeScreen> {
         floatingActionButton:
             FloatingActionButton(
           onPressed: addProduct,
-
           child: const Icon(
             Icons.add,
           ),
@@ -415,3 +517,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

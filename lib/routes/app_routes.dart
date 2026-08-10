@@ -1,9 +1,10 @@
+
 import 'package:flutter/material.dart';
 
-import '../models/product.dart';
-import '../screens/home_screen.dart';
-import '../screens/product_detail_screen.dart';
-import '../screens/product_form_screen.dart';
+import '../domain/entities/product.dart';
+import '../presentation/screens/home_screen.dart';
+import '../presentation/screens/product_detail_screen.dart';
+import '../presentation/screens/product_form_screen.dart';
 
 // ============================================================
 // APP ROUTES
@@ -23,7 +24,7 @@ class AppRoutes {
   // ROUTE GENERATOR
   // ==========================================================
 
-  static Route<dynamic> generateRoute(
+  static Route generateRoute(
     RouteSettings settings,
   ) {
     switch (settings.name) {
@@ -129,10 +130,10 @@ class AppRoutes {
           position: tween.animate(
             curvedAnimation,
           ),
-
           child: child,
         );
       },
     );
   }
 }
+

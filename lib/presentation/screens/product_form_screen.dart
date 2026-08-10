@@ -1,11 +1,10 @@
+
 import 'package:flutter/material.dart';
 
-import '../models/product.dart';
+import '../../domain/entities/product.dart';
 import '../widgets/phone_frame.dart';
 
-
-class ProductFormScreen
-    extends StatefulWidget {
+class ProductFormScreen extends StatefulWidget {
   final Product? product;
 
   const ProductFormScreen({
@@ -14,9 +13,8 @@ class ProductFormScreen
   });
 
   @override
-  State<ProductFormScreen>
-      createState() =>
-          _ProductFormScreenState();
+  State<ProductFormScreen> createState() =>
+      _ProductFormScreenState();
 }
 
 // ============================================================
@@ -29,14 +27,12 @@ class _ProductFormScreenState
   // CONTROLLERS
   // ==========================================================
 
-  final titleController =
-      TextEditingController();
+  final titleController = TextEditingController();
 
   final descriptionController =
       TextEditingController();
 
-  final priceController =
-      TextEditingController();
+  final priceController = TextEditingController();
 
   // ==========================================================
   // EDITING?
@@ -56,14 +52,13 @@ class _ProductFormScreenState
 
     if (widget.product != null) {
       titleController.text =
-          widget.product!.title;
+          widget.product!.name;
 
       descriptionController.text =
           widget.product!.description;
 
       priceController.text =
-          widget.product!.price
-              .toString();
+          widget.product!.price.toString();
     }
   }
 
@@ -140,13 +135,13 @@ class _ProductFormScreenState
     // ========================================================
 
     if (isEditing) {
-      final updatedProduct =
-          Product(
+      final updatedProduct = Product(
         id: widget.product!.id,
-
-        title: title,
-
+        name: title,
         description: description,
+
+        // Keep the existing image URL when editing.
+        imageUrl: widget.product!.imageUrl,
 
         price: price,
       );
@@ -167,9 +162,13 @@ class _ProductFormScreenState
       id: DateTime.now()
           .millisecondsSinceEpoch,
 
-      title: title,
+      name: title,
 
       description: description,
+
+      // The original application doesn't have
+      // an image URL input yet, so keep it empty.
+      imageUrl: '',
 
       price: price,
     );
@@ -206,13 +205,10 @@ class _ProductFormScreenState
 
         body: SafeArea(
           child: SingleChildScrollView(
-            padding:
-                const EdgeInsets.all(20),
-
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
-
               children: [
                 // ------------------------------------------------
                 // HEADER
@@ -222,11 +218,9 @@ class _ProductFormScreenState
                   isEditing
                       ? 'Update your product'
                       : 'Create a new product',
-
                   style: const TextStyle(
                     fontSize: 25,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
@@ -236,40 +230,33 @@ class _ProductFormScreenState
                   isEditing
                       ? 'Change the information below.'
                       : 'Enter the product information below.',
-
                   style: TextStyle(
                     fontSize: 14,
-                    color:
-                        Colors.grey.shade600,
+                    color: Colors.grey.shade600,
                   ),
                 ),
 
                 const SizedBox(height: 30),
 
                 // ------------------------------------------------
-                // TITLE
+                // PRODUCT NAME
                 // ------------------------------------------------
 
                 const Text(
-                  'Product Title',
-
+                  'Product Name',
                   style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
                 TextField(
-                  controller:
-                      titleController,
-
+                  controller: titleController,
                   decoration:
                       const InputDecoration(
                     hintText:
                         'e.g. Gaming Laptop',
-
                     prefixIcon: Icon(
                       Icons.shopping_bag_outlined,
                     ),
@@ -284,10 +271,8 @@ class _ProductFormScreenState
 
                 const Text(
                   'Description',
-
                   style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
@@ -296,9 +281,7 @@ class _ProductFormScreenState
                 TextField(
                   controller:
                       descriptionController,
-
                   maxLines: 5,
-
                   decoration:
                       const InputDecoration(
                     hintText:
@@ -314,32 +297,24 @@ class _ProductFormScreenState
 
                 const Text(
                   'Price',
-
                   style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
                 TextField(
-                  controller:
-                      priceController,
-
+                  controller: priceController,
                   keyboardType:
                       const TextInputType
                           .numberWithOptions(
                     decimal: true,
                   ),
-
                   decoration:
                       const InputDecoration(
-                    hintText:
-                        'e.g. 1500',
-
-                    prefixIcon:
-                        Icon(
+                    hintText: 'e.g. 1500',
+                    prefixIcon: Icon(
                       Icons.attach_money,
                     ),
                   ),
@@ -353,13 +328,11 @@ class _ProductFormScreenState
 
                 ElevatedButton.icon(
                   onPressed: saveProduct,
-
                   icon: Icon(
                     isEditing
                         ? Icons.save_outlined
                         : Icons.add,
                   ),
-
                   label: Text(
                     isEditing
                         ? 'Update Product'
@@ -374,3 +347,4 @@ class _ProductFormScreenState
     );
   }
 }
+
