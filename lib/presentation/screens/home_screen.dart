@@ -1,7 +1,10 @@
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
-import '../../data/datasources/product_datasource.dart';
+import '../../core/network/mock_http_client.dart';
+import '../../core/network/network_info.dart';
+import '../../data/datasources/product_local_datasource_impl.dart';
+import '../../data/datasources/product_remote_datasource_impl.dart';
 import '../../data/repositories/product_repository_impl.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/usecases/create_product.dart';
@@ -10,28 +13,21 @@ import '../../domain/usecases/update_product.dart';
 import '../../domain/usecases/view_all_products.dart';
 import '../widgets/phone_frame.dart';
 
-// ============================================================
-// HOME SCREEN
-// ============================================================
-
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+  });
 
   @override
-  State<HomeScreen> createState() =>
-      _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// ============================================================
-// HOME STATE
-// ============================================================
-
 class _HomeScreenState extends State<HomeScreen> {
-  // ==========================================================
-  // DATA / DOMAIN DEPENDENCIES
-  // ==========================================================
+  late final NetworkInfo networkInfo;
 
-  late final ProductDatasource datasource;
+  late final ProductLocalDataSourceImpl localDataSource;
+
+  late final ProductRemoteDataSourceImpl remoteDataSource;
 
   late final ProductRepositoryImpl repository;
 
@@ -43,65 +39,89 @@ class _HomeScreenState extends State<HomeScreen> {
 
   late final DeleteProduct deleteProduct;
 
-  // ==========================================================
-  // PRODUCTS
-  // ==========================================================
-
   List<Product> products = [];
-
-  // ==========================================================
-  // INITIALIZE
-  // ==========================================================
 
   @override
   void initState() {
     super.initState();
 
-    // --------------------------------------------------------
-    // Create our dependencies.
+    // ==========================================================
+    // NETWORK INFORMATION
+    // ==========================================================
+
+    networkInfo = NetworkInfoImpl(
+      Connectivity(),
+    );
+
+    // ==========================================================
+    // LOCAL DATA SOURCE
+    // ==========================================================
+
+    localDataSource = ProductLocalDataSourceImpl();
+
+    // ==========================================================
+    // REMOTE DATA SOURCE
+    // ==========================================================
     //
-    // Later we can move this to dependency injection.
-    // For now we keep it simple.
-    // --------------------------------------------------------
+    // We currently don't have a real backend.
+    //
+    // MockHttpClient behaves like an HTTP server locally.
+    // This allows the RemoteDataSource and Repository to be
+    // tested without requiring a real backend.
+    //
+    // Later, when we have a real backend, this can become:
+    //
+    // client: http.Client(),
+    // baseUrl: 'https://your-real-api.com/api',
+    //
+    // ==========================================================
 
-    datasource = ProductDatasource();
+    remoteDataSource = ProductRemoteDataSourceImpl(
+      client: MockHttpClient(),
+      baseUrl: 'http://mock.api',
+    );
 
-    repository =
-        ProductRepositoryImpl(datasource);
+    // ==========================================================
+    // REPOSITORY
+    // ==========================================================
 
-    viewAllProducts =
-        ViewAllProducts(repository);
+    repository = ProductRepositoryImpl(
+      remoteDataSource: remoteDataSource,
+      localDataSource: localDataSource,
+      networkInfo: networkInfo,
+    );
 
-    createProduct =
-        CreateProduct(repository);
+    // ==========================================================
+    // USE CASES
+    // ==========================================================
 
-    updateProduct =
-        UpdateProduct(repository);
+    viewAllProducts = ViewAllProducts(repository);
 
-    deleteProduct =
-        DeleteProduct(repository);
+    createProduct = CreateProduct(repository);
 
-    // --------------------------------------------------------
-    // Load products.
-    // --------------------------------------------------------
+    updateProduct = UpdateProduct(repository);
+
+    deleteProduct = DeleteProduct(repository);
+
+    // ==========================================================
+    // LOAD PRODUCTS
+    // ==========================================================
 
     loadProducts();
   }
 
-  // ==========================================================
+  // ============================================================
   // LOAD PRODUCTS
-  // ==========================================================
+  // ============================================================
 
   Future<void> loadProducts() async {
-    final result =
-        await viewAllProducts();
+    final result = await viewAllProducts();
 
     result.fold(
       (failure) {
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(failure),
           ),
@@ -117,27 +137,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ==========================================================
+  // ============================================================
   // ADD PRODUCT
-  // ==========================================================
+  // ============================================================
 
   Future<void> addProduct() async {
-    final result =
-        await Navigator.pushNamed(
+    final result = await Navigator.pushNamed(
       context,
       '/product-form',
     );
 
     if (result is Product) {
-      final createResult =
-          await createProduct(result);
+      final createResult = await createProduct(result);
 
       createResult.fold(
         (failure) {
           if (!mounted) return;
 
-          ScaffoldMessenger.of(context)
-              .showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(failure),
             ),
@@ -150,38 +167,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ==========================================================
+  // ============================================================
   // OPEN PRODUCT
-  // ==========================================================
+  // ============================================================
 
   Future<void> openProduct(
     Product product,
   ) async {
-    final result =
-        await Navigator.pushNamed(
+    final result = await Navigator.pushNamed(
       context,
       '/product-detail',
       arguments: product,
     );
 
-    // --------------------------------------------------------
-    // RECEIVE RESULT
-    // --------------------------------------------------------
-
     if (result is Map<String, dynamic>) {
-      final action =
-          result['action'];
+      final action = result['action'];
 
-      // ======================================================
+      // ========================================================
       // UPDATE
-      // ======================================================
+      // ========================================================
 
       if (action == 'update') {
-        final updatedProduct =
-            result['product'] as Product;
+        final updatedProduct = result['product'] as Product;
 
-        final updateResult =
-            await updateProduct(
+        final updateResult = await updateProduct(
           updatedProduct,
         );
 
@@ -189,8 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
           (failure) {
             if (!mounted) return;
 
-            ScaffoldMessenger.of(context)
-                .showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(failure),
               ),
@@ -202,16 +210,14 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
 
-      // ======================================================
+      // ========================================================
       // DELETE
-      // ======================================================
+      // ========================================================
 
       if (action == 'delete') {
-        final productId =
-            result['productId'] as int;
+        final productId = result['productId'] as int;
 
-        final deleteResult =
-            await deleteProduct(
+        final deleteResult = await deleteProduct(
           productId,
         );
 
@@ -219,8 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
           (failure) {
             if (!mounted) return;
 
-            ScaffoldMessenger.of(context)
-                .showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(failure),
               ),
@@ -234,9 +239,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ==========================================================
+  // ============================================================
   // PRODUCT CARD
-  // ==========================================================
+  // ============================================================
 
   Widget productCard(
     Product product,
@@ -246,46 +251,29 @@ class _HomeScreenState extends State<HomeScreen> {
         bottom: 14,
       ),
       child: InkWell(
-        borderRadius:
-            BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
         onTap: () {
           openProduct(product);
         },
         child: Padding(
-          padding:
-              const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              // ------------------------------------------------
-              // PRODUCT IMAGE AREA
-              // ------------------------------------------------
-
               Container(
                 width: 80,
                 height: 80,
-                decoration:
-                    BoxDecoration(
-                  color:
-                      const Color(0xFFF1EFF7),
-                  borderRadius:
-                      BorderRadius.circular(
-                    16,
-                  ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1EFF7),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
-                  Icons
-                      .shopping_bag_outlined,
+                  Icons.shopping_bag_outlined,
                   size: 38,
-                  color:
-                      Color(0xFF6750A4),
+                  color: Color(0xFF6750A4),
                 ),
               ),
 
               const SizedBox(width: 14),
-
-              // ------------------------------------------------
-              // PRODUCT INFORMATION
-              // ------------------------------------------------
 
               Expanded(
                 child: Column(
@@ -295,45 +283,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       product.title,
                       maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         fontSize: 17,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 6,
-                    ),
+                    const SizedBox(height: 6),
 
                     Text(
                       product.description,
                       maxLines: 2,
-                      overflow:
-                          TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors
-                            .grey.shade600,
+                        color: Colors.grey.shade600,
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 8),
 
                     Text(
                       '\$${product.price.toStringAsFixed(2)}',
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
-                        fontWeight:
-                            FontWeight.bold,
-                        color:
-                            Color(0xFF6750A4),
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6750A4),
                       ),
                     ),
                   ],
@@ -341,10 +317,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               const SizedBox(width: 8),
-
-              // ------------------------------------------------
-              // ARROW
-              // ------------------------------------------------
 
               const Icon(
                 Icons.arrow_forward_ios,
@@ -358,9 +330,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ==========================================================
+  // ============================================================
   // BUILD
-  // ==========================================================
+  // ============================================================
 
   @override
   Widget build(
@@ -368,10 +340,6 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     return PhoneFrame(
       child: Scaffold(
-        // ------------------------------------------------------
-        // APP BAR
-        // ------------------------------------------------------
-
         appBar: AppBar(
           title: const Text(
             'ShopEasy',
@@ -380,99 +348,61 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               onPressed: () {},
               icon: const Icon(
-                Icons
-                    .shopping_cart_outlined,
+                Icons.shopping_cart_outlined,
               ),
             ),
           ],
         ),
 
-        // ------------------------------------------------------
-        // BODY
-        // ------------------------------------------------------
-
         body: SafeArea(
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 18,
             ),
             child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
-                const SizedBox(
-                  height: 10,
-                ),
-
-                // ------------------------------------------------
-                // GREETING
-                // ------------------------------------------------
+                const SizedBox(height: 10),
 
                 const Text(
                   'Find your products',
                   style: TextStyle(
                     fontSize: 27,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(
-                  height: 6,
-                ),
+                const SizedBox(height: 6),
 
                 Text(
                   'Everything you need in one place.',
                   style: TextStyle(
                     fontSize: 14,
-                    color:
-                        Colors.grey.shade600,
+                    color: Colors.grey.shade600,
                   ),
                 ),
 
-                const SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
 
-                // ------------------------------------------------
-                // SEARCH
-                // ------------------------------------------------
-
-                TextField(
-                  decoration:
-                      const InputDecoration(
-                    hintText:
-                        'Search products...',
-                    prefixIcon:
-                        Icon(Icons.search),
+                const TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search products...',
+                    prefixIcon: Icon(Icons.search),
                   ),
                 ),
 
-                const SizedBox(
-                  height: 20,
-                ),
-
-                // ------------------------------------------------
-                // CATEGORY
-                // ------------------------------------------------
+                const SizedBox(height: 20),
 
                 const Text(
                   'Products',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight:
-                        FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(
-                  height: 12,
-                ),
-
-                // ------------------------------------------------
-                // PRODUCT LIST
-                // ------------------------------------------------
+                const SizedBox(height: 12),
 
                 Expanded(
                   child: products.isEmpty
@@ -482,12 +412,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         )
                       : ListView.builder(
-                          padding:
-                              EdgeInsets.zero,
-                          itemCount:
-                              products.length,
-                          itemBuilder:
-                              (
+                          padding: EdgeInsets.zero,
+                          itemCount: products.length,
+                          itemBuilder: (
                             context,
                             index,
                           ) {
@@ -502,12 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // ------------------------------------------------------
-        // ADD PRODUCT
-        // ------------------------------------------------------
-
-        floatingActionButton:
-            FloatingActionButton(
+        floatingActionButton: FloatingActionButton(
           onPressed: addProduct,
           child: const Icon(
             Icons.add,
@@ -517,4 +439,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
