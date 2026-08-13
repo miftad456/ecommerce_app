@@ -1,11 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:ecommerce_app/core/network/network_info.dart';
 import 'package:ecommerce_app/data/datasources/product_local_datasource.dart';
 import 'package:ecommerce_app/data/datasources/product_remote_datasource.dart';
 import 'package:ecommerce_app/data/models/product_model.dart';
 import 'package:ecommerce_app/data/repositories/product_repository_impl.dart';
 import 'package:ecommerce_app/domain/entities/product.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 
 class FakeNetworkInfo implements NetworkInfo {
   bool connected;
@@ -105,16 +105,16 @@ class FakeLocalDataSource
   }) : products = products ?? [];
 
   @override
-  List<ProductModel> getAllProducts() {
+  Future<List<ProductModel>> getAllProducts() async {
     getAllProductsCalled = true;
 
     return List.unmodifiable(products);
   }
 
   @override
-  ProductModel? getProductById(
+  Future<ProductModel?> getProductById(
     int id,
-  ) {
+  ) async {
     getProductByIdCalled = true;
 
     for (final product in products) {
@@ -127,9 +127,9 @@ class FakeLocalDataSource
   }
 
   @override
-  void cacheProducts(
+  Future<void> cacheProducts(
     List<ProductModel> products,
-  ) {
+  ) async {
     cacheProductsCalled = true;
 
     this.products
@@ -138,9 +138,9 @@ class FakeLocalDataSource
   }
 
   @override
-  void cacheProduct(
+  Future<void> cacheProduct(
     ProductModel product,
-  ) {
+  ) async {
     cacheProductCalled = true;
 
     final index = products.indexWhere(
@@ -155,18 +155,18 @@ class FakeLocalDataSource
   }
 
   @override
-  void createProduct(
+  Future<void> createProduct(
     ProductModel product,
-  ) {
+  ) async {
     createProductCalled = true;
 
     products.add(product);
   }
 
   @override
-  bool updateProduct(
+  Future<bool> updateProduct(
     ProductModel product,
-  ) {
+  ) async {
     updateProductCalled = true;
 
     final index = products.indexWhere(
@@ -183,9 +183,9 @@ class FakeLocalDataSource
   }
 
   @override
-  bool deleteProduct(
+  Future<bool> deleteProduct(
     int id,
-  ) {
+  ) async {
     deleteProductCalled = true;
 
     final index = products.indexWhere(
@@ -397,7 +397,7 @@ void main() {
           );
 
           expect(
-            localDataSource.getProductById(1)?.id,
+            (await localDataSource.getProductById(1))?.id,
             remoteProduct.id,
           );
         },
@@ -469,7 +469,7 @@ void main() {
           );
 
           expect(
-            localDataSource.createProductCalled,
+            localDataSource.cacheProductCalled,
             true,
           );
         },

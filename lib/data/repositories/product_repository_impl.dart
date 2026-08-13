@@ -24,45 +24,61 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<Either<String, List<Product>>> getAllProducts() async {
-    print('========================================');
-    print('GET ALL PRODUCTS');
-    print('========================================');
-
     try {
+      print('');
+      print('##################################################');
+      print('REPOSITORY: getAllProducts()');
+      print('REPOSITORY: Checking internet connection...');
+      print('##################################################');
+
       final isConnected = await networkInfo.isConnected;
 
-      print('Network connected: $isConnected');
+      print(
+        'REPOSITORY: Internet connected = $isConnected',
+      );
 
       if (isConnected) {
-        print('Using REMOTE data source');
+        print('');
+        print('>>> REPOSITORY DECISION: USE REMOTE DATA SOURCE <<<');
+        print('>>> Fetching products from API...');
+        print('');
 
         final products =
             await remoteDataSource.getAllProducts();
 
         print(
-          'Remote products received: ${products.length}',
+          'REPOSITORY: Remote products received: ${products.length}',
         );
 
-        print('Caching remote products locally...');
+        print(
+          'REPOSITORY: Caching remote products locally...',
+        );
 
-        localDataSource.cacheProducts(products);
+        await localDataSource.cacheProducts(products);
 
-        print('Products cached successfully');
+        print(
+          'REPOSITORY: Remote products cached successfully',
+        );
 
         return Right(products);
       }
 
-      print('Using LOCAL data source');
+      print('');
+      print('>>> REPOSITORY DECISION: USE LOCAL DATA SOURCE <<<');
+      print('>>> Internet is not available');
+      print('>>> Reading products from local storage...');
+      print('');
 
-      final products = localDataSource.getAllProducts();
+      final products =
+          await localDataSource.getAllProducts();
 
       print(
-        'Local products found: ${products.length}',
+        'REPOSITORY: Local products received: ${products.length}',
       );
 
       return Right(products);
     } catch (e) {
-      print('GET ALL PRODUCTS ERROR: $e');
+      print('REPOSITORY ERROR: $e');
 
       return Left(e.toString());
     }
@@ -76,43 +92,60 @@ class ProductRepositoryImpl implements ProductRepository {
   Future<Either<String, Product>> getProductById(
     int id,
   ) async {
-    print('========================================');
-    print('GET PRODUCT BY ID');
-    print('Product ID: $id');
-    print('========================================');
-
     try {
+      print('');
+      print('##################################################');
+      print('REPOSITORY: getProductById($id)');
+      print('REPOSITORY: Checking internet connection...');
+      print('##################################################');
+
       final isConnected = await networkInfo.isConnected;
 
-      print('Network connected: $isConnected');
+      print(
+        'REPOSITORY: Internet connected = $isConnected',
+      );
 
       if (isConnected) {
-        print('Using REMOTE data source');
+        print('');
+        print(
+          '>>> REPOSITORY DECISION: USE REMOTE DATA SOURCE <<<',
+        );
+        print(
+          '>>> Fetching product $id from API...',
+        );
+        print('');
 
         final product =
             await remoteDataSource.getProductById(id);
 
         print(
-          'Remote product received: ${product.id}',
+          'REPOSITORY: Remote product $id received',
         );
 
-        print('Caching product locally...');
+        await localDataSource.cacheProduct(product);
 
-        localDataSource.cacheProduct(product);
-
-        print('Product cached successfully');
+        print(
+          'REPOSITORY: Product $id cached locally',
+        );
 
         return Right(product);
       }
 
-      print('Using LOCAL data source');
+      print('');
+      print(
+        '>>> REPOSITORY DECISION: USE LOCAL DATA SOURCE <<<',
+      );
+      print(
+        '>>> Reading product $id from local storage...',
+      );
+      print('');
 
       final product =
-          localDataSource.getProductById(id);
+          await localDataSource.getProductById(id);
 
       if (product == null) {
         print(
-          'Product with id $id was NOT found locally',
+          'REPOSITORY: Product $id not found locally',
         );
 
         return Left(
@@ -121,12 +154,12 @@ class ProductRepositoryImpl implements ProductRepository {
       }
 
       print(
-        'Product with id $id found locally',
+        'REPOSITORY: Product $id found locally',
       );
 
       return Right(product);
     } catch (e) {
-      print('GET PRODUCT BY ID ERROR: $e');
+      print('REPOSITORY ERROR: $e');
 
       return Left(e.toString());
     }
@@ -137,49 +170,68 @@ class ProductRepositoryImpl implements ProductRepository {
   // ============================================================
 
   @override
-Future<Either<String, Unit>> createProduct(
-  Product product,
-) async {
-  print('========================================');
-  print('CREATE PRODUCT');
-  print('========================================');
+  Future<Either<String, Unit>> createProduct(
+    Product product,
+  ) async {
+    try {
+      print('');
+      print('##################################################');
+      print('REPOSITORY: createProduct()');
+      print('##################################################');
 
-  try {
-    final productModel =
-        ProductModel.fromEntity(product);
+      final productModel =
+          ProductModel.fromEntity(product);
 
-    print('Product converted successfully');
+      final isConnected =
+          await networkInfo.isConnected;
 
-    // TEMPORARY TEST:
-    // Directly save to local storage.
-    localDataSource.createProduct(productModel);
-
-    print('Product saved to LOCAL storage');
-
-    final savedProduct =
-        localDataSource.getProductById(product.id);
-
-    print('Checking local storage...');
-
-    if (savedProduct != null) {
       print(
-        'LOCAL STORAGE TEST PASSED: '
-        '${savedProduct.name}',
+        'REPOSITORY: Internet connected = $isConnected',
       );
-    } else {
+
+      if (isConnected) {
+        print(
+          '>>> REPOSITORY DECISION: USE REMOTE DATA SOURCE <<<',
+        );
+
+        await remoteDataSource.createProduct(
+          productModel,
+        );
+
+        print(
+          'REPOSITORY: Product created remotely',
+        );
+
+        await localDataSource.cacheProduct(
+          productModel,
+        );
+
+        print(
+          'REPOSITORY: Product cached locally',
+        );
+
+        return const Right(unit);
+      }
+
       print(
-        'LOCAL STORAGE TEST FAILED',
+        '>>> REPOSITORY DECISION: USE LOCAL DATA SOURCE <<<',
       );
+
+      await localDataSource.createProduct(
+        productModel,
+      );
+
+      print(
+        'REPOSITORY: Product created locally',
+      );
+
+      return const Right(unit);
+    } catch (e) {
+      print('REPOSITORY ERROR: $e');
+
+      return Left(e.toString());
     }
-
-    return Right(unit);
-  } catch (e, stackTrace) {
-    print('CREATE PRODUCT ERROR: $e');
-    print(stackTrace);
-
-    return Left(e.toString());
   }
-}
 
   // ============================================================
   // UPDATE PRODUCT
@@ -189,24 +241,27 @@ Future<Either<String, Unit>> createProduct(
   Future<Either<String, Unit>> updateProduct(
     Product product,
   ) async {
-    print('========================================');
-    print('UPDATE PRODUCT');
-    print('Product ID: ${product.id}');
-    print('========================================');
-
     try {
+      print('');
+      print('##################################################');
+      print(
+        'REPOSITORY: updateProduct(${product.id})',
+      );
+      print('##################################################');
+
       final productModel =
           ProductModel.fromEntity(product);
 
-      final isConnected = await networkInfo.isConnected;
+      final isConnected =
+          await networkInfo.isConnected;
 
-      print('Network connected: $isConnected');
+      print(
+        'REPOSITORY: Internet connected = $isConnected',
+      );
 
       if (isConnected) {
-        print('Using REMOTE data source');
-
         print(
-          'Sending updated product to remote datasource...',
+          '>>> REPOSITORY DECISION: USE REMOTE DATA SOURCE <<<',
         );
 
         await remoteDataSource.updateProduct(
@@ -214,36 +269,32 @@ Future<Either<String, Unit>> createProduct(
         );
 
         print(
-          'Remote product update SUCCESSFUL',
+          'REPOSITORY: Product ${product.id} updated remotely',
         );
 
-        print(
-          'Updating local product cache...',
-        );
-
-        localDataSource.updateProduct(
+        await localDataSource.updateProduct(
           productModel,
         );
 
         print(
-          'Local product update SUCCESSFUL',
+          'REPOSITORY: Product ${product.id} updated locally',
         );
 
-        print('UPDATE PRODUCT SUCCESS');
-
-        return Right(unit);
+        return const Right(unit);
       }
 
-      print('Using LOCAL data source');
+      print(
+        '>>> REPOSITORY DECISION: USE LOCAL DATA SOURCE <<<',
+      );
 
       final updated =
-          localDataSource.updateProduct(
+          await localDataSource.updateProduct(
         productModel,
       );
 
       if (!updated) {
         print(
-          'Product with id ${product.id} was NOT found locally',
+          'REPOSITORY: Product ${product.id} not found locally',
         );
 
         return Left(
@@ -252,17 +303,12 @@ Future<Either<String, Unit>> createProduct(
       }
 
       print(
-        'Product updated locally because device is offline',
+        'REPOSITORY: Product ${product.id} updated locally',
       );
 
-      print('UPDATE PRODUCT SUCCESS');
-
-      return Right(unit);
+      return const Right(unit);
     } catch (e) {
-      print('========================================');
-      print('UPDATE PRODUCT ERROR');
-      print('Error: $e');
-      print('========================================');
+      print('REPOSITORY ERROR: $e');
 
       return Left(e.toString());
     }
@@ -276,52 +322,49 @@ Future<Either<String, Unit>> createProduct(
   Future<Either<String, Unit>> deleteProduct(
     int id,
   ) async {
-    print('========================================');
-    print('DELETE PRODUCT');
-    print('Product ID: $id');
-    print('========================================');
-
     try {
-      final isConnected = await networkInfo.isConnected;
+      print('');
+      print('##################################################');
+      print('REPOSITORY: deleteProduct($id)');
+      print('##################################################');
 
-      print('Network connected: $isConnected');
+      final isConnected =
+          await networkInfo.isConnected;
+
+      print(
+        'REPOSITORY: Internet connected = $isConnected',
+      );
 
       if (isConnected) {
-        print('Using REMOTE data source');
-
         print(
-          'Sending delete request to remote datasource...',
+          '>>> REPOSITORY DECISION: USE REMOTE DATA SOURCE <<<',
         );
 
         await remoteDataSource.deleteProduct(id);
 
         print(
-          'Remote product deletion SUCCESSFUL',
+          'REPOSITORY: Product $id deleted remotely',
         );
+
+        await localDataSource.deleteProduct(id);
 
         print(
-          'Deleting product from local cache...',
+          'REPOSITORY: Product $id deleted locally',
         );
 
-        localDataSource.deleteProduct(id);
-
-        print(
-          'Local product deletion SUCCESSFUL',
-        );
-
-        print('DELETE PRODUCT SUCCESS');
-
-        return Right(unit);
+        return const Right(unit);
       }
 
-      print('Using LOCAL data source');
+      print(
+        '>>> REPOSITORY DECISION: USE LOCAL DATA SOURCE <<<',
+      );
 
       final deleted =
-          localDataSource.deleteProduct(id);
+          await localDataSource.deleteProduct(id);
 
       if (!deleted) {
         print(
-          'Product with id $id was NOT found locally',
+          'REPOSITORY: Product $id not found locally',
         );
 
         return Left(
@@ -330,17 +373,12 @@ Future<Either<String, Unit>> createProduct(
       }
 
       print(
-        'Product deleted locally because device is offline',
+        'REPOSITORY: Product $id deleted locally',
       );
 
-      print('DELETE PRODUCT SUCCESS');
-
-      return Right(unit);
+      return const Right(unit);
     } catch (e) {
-      print('========================================');
-      print('DELETE PRODUCT ERROR');
-      print('Error: $e');
-      print('========================================');
+      print('REPOSITORY ERROR: $e');
 
       return Left(e.toString());
     }

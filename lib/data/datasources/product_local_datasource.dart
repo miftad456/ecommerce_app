@@ -1,17 +1,17 @@
 import '../models/product_model.dart';
 
 abstract class ProductLocalDataSource {
-  List<ProductModel> getAllProducts();
+  Future<List<ProductModel>> getAllProducts();
 
-  ProductModel? getProductById(int id);
+  Future<ProductModel?> getProductById(int id);
 
-  void cacheProducts(List<ProductModel> products);
+  Future<void> cacheProducts(List<ProductModel> products);
 
-  void cacheProduct(ProductModel product);
+  Future<void> cacheProduct(ProductModel product);
 
-  void createProduct(ProductModel product);
+  Future<void> createProduct(ProductModel product);
 
-  bool updateProduct(ProductModel product);
+  Future<bool> updateProduct(ProductModel product);
 
-  bool deleteProduct(int id);
+  Future<bool> deleteProduct(int id);
 }

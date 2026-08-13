@@ -1,29 +1,33 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
 abstract class NetworkInfo {
   Future<bool> get isConnected;
 }
 
 class NetworkInfoImpl implements NetworkInfo {
-  final Connectivity connectivity;
+  final InternetConnection internetConnection;
 
-  NetworkInfoImpl(this.connectivity);
+  NetworkInfoImpl(this.internetConnection);
 
   @override
   Future<bool> get isConnected async {
-    try {
-      final result = await connectivity.checkConnectivity();
+    print('NETWORK INFO: Checking internet connection...');
 
-      return result.any(
-        (connection) =>
-            connection != ConnectivityResult.none,
+    try {
+      final result =
+          await internetConnection.hasInternetAccess.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => false,
       );
-    } catch (e) {
-      // If the platform connectivity service fails
-      // (for example, Linux DBus/NetworkManager),
-      // safely treat the device as offline.
+
       print(
-        'Network connectivity check failed: $e',
+        'NETWORK INFO: Internet available = $result',
+      );
+
+      return result;
+    } catch (e) {
+      print(
+        'NETWORK INFO: Connection check failed: $e',
       );
 
       return false;
